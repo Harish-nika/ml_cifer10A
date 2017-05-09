@@ -1,0 +1,135 @@
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import numpy as np
+import cPickle
+import timeit
+import KNN
+import svm as SVM
+import softmax as SC
+import nn as NN
+import hw2_bank_data as HW
+
+def unpickle(file):
+    import cPickle
+    fo = open(file, 'rb')
+    dict = cPickle.load(fo)
+    fo.close()
+    return dict
+
+def check():
+    dict = unpickle("cifar-10-batches-py/data_batch_1")
+    k=dict.keys()
+    v=dict.values()
+    print k
+    print [len(i) for i in v]
+
+    ex1 = np.array(v[0][100])
+    print len(ex1)
+
+    data = np.reshape(ex1, (32, 32, 3))
+    plt.imshow(data)
+    plt.show()
+
+def prepare1():
+    # for i in range(3072):
+    #     Xtr.append(0)
+    # Xtr=np.array([Xtr])
+
+    # Data
+    Xtr = np.empty((1,3072),float)    #initialize with shape and type (empty is same as zero for int/float)
+    Ytr = np.empty((1),int)         #[0]
+    # Xte = np.empty((1, 3072), int)
+    # Yte = np.empty((1), int)
+    dict=[]
+
+    #-----------------------Train
+    for i in range(1,2):
+        dict.append(unpickle("cifar-10-batches-py/data_batch_"+str(i)))
+    dict.append(unpickle("cifar-10-batches-py/test_batch"))
+
+    # for dic in dict:
+    #     for k in dic.keys():
+    #         print k
+
+    for dic in dict:
+        v = dic.values()
+        # print v[0].shape,Xtr.shape
+        Xtr = np.concatenate((Xtr,v[0]),0)      #Xtr = np.vstack((Xtr,v[0]))
+        Ytr = np.concatenate((Ytr,v[1]),0)      #Ytr = np.hstack((Ytr,v[1]))
+
+
+    # return Xtr[1:1001], Ytr[1:1001], Xtr[50001:51001], Ytr[50001:51001]
+    return Xtr[1:5001], Ytr[1:5001], Xtr[10001:10051], Ytr[10001:10051]
+
+def prepare2():
+    # Data-2
+    X = np.array([99,98,101,0,2,3],ndmin=2,dtype=float).T
+    Y = np.array([1,1,1,0,0,0],ndmin=2).T
+    Xte=np.array([110,100,112,1,4,5],ndmin=2,dtype=float).T
+    Yte=np.array([[1,1,1,0,0,0]]).T         #same as above for creating column vector
+    return X,Y,Xte,Yte
+
+def prepare3():
+    N = 100  # number of points per class
+    D = 2  # dimensionality
+    K = 3  # number of classes
+    X = np.zeros((N * K, D))  # data matrix (each row = single example)
+    y = np.zeros(N * K, dtype='uint8')  # class labels
+    for j in xrange(K):
+        ix = range(N * j, N * (j + 1))
+        r = np.linspace(0.0, 1, N)  # radius
+        t = np.linspace(j * 4, (j + 1) * 4, N) + np.random.randn(N) * 0.2  # theta
+        X[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
+        y[ix] = j
+    # lets visualize the data:
+    # plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.Spectral)
+    # plt.show()
+    return X,y,X,y
+
+def prepare4():
+    return HW.prepare()
+
+def TestScript(model, X,Y,Xte,Yte):
+
+    model.train(X, Y)
+    Yte_predict = model.predict(Xte)         # need to modify knn.predict to support k
+    # print Yte.shape
+    # print Yte_predict.flatten().shape
+    print '\n====\naccuracy: %f' % (np.mean(Yte_predict.flatten() == Yte.flatten()))
+
+# Process
+# KNN
+# SVM
+# SOFTMAX
+# NN
+# CNN
+
+def preprocess(X,Xte):
+    mew=np.mean(X, axis=0)
+    sigma = np.std(X, axis=0)
+    X -= mew     #Must do for Algorithm to work/Converge. Improves accuracy drastically.
+    X /= sigma
+    Xte -= mew  # Must do for Algorithm to work/Converge
+    Xte /= sigma
+    #
+    # plt.plot(X, Y, 'ro')
+    # plt.show()
+    return X,Xte
+
+# Main
+def main():
+    # Date-1
+    X,Y,Xte,Yte = prepare4()     #Expects: X= float data_type, y = int data type
+    X, Xte = preprocess(X,Xte)
+    print len(X),len(Y),len(Xte),len(Yte)
+
+    # knn=KNN.NearestNeighbor()
+    svm = SVM.SupportVecotMachine()
+    sc = SC.SoftmaxClassifier()
+    nn = NN.NeuralNetClassifier()
+
+    start_time = timeit.default_timer()
+    TestScript(sc,X,Y,Xte,Yte)
+    print "ExecutionTime: ", (timeit.default_timer() - start_time)
+
+main()
